@@ -7,7 +7,7 @@ import pandas as pd
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-batch_size_train = 64
+batch_size_train = 64 #from paper
 batch_size_test = batch_size_train
 
 train_loader = torch.utils.data.DataLoader(
@@ -49,7 +49,7 @@ def train(model, device, train_loader, optimizer, w_s=1):
         inputs, targets = inputs.to(device), targets.to(device)
         #targets = F.one_hot(targets, num_classes=10)
         outputs, a_hat, a = model(inputs) #a_hat and a are as defined in the paper
-        loss = loss_c(outputs, targets) + w_s*loss_s(a_hat, a)
+        loss = loss_c(outputs, targets) + w_s*loss_s(a_hat, a)/model.hidden_size
         loss /= batch_size_train #convert to mean
         loss_list.append(loss.item())
         loss.backward()
@@ -69,16 +69,16 @@ def test(model, device, test_loader, w_s=1):
         for inputs, targets in test_loader:
             inputs, targets = inputs.to(device), targets.to(device)
             outputs, a_hat, a = model(inputs)
-            loss += loss_c(outputs, targets) + w_s*loss_s(a_hat, a) #add up all losses to calculate mean loss
+            loss += loss_c(outputs, targets) + w_s*loss_s(a_hat, a) #add up to calculate mean later
             correct += get_total_correct(outputs, targets)
 
-    loss /= len(test_loader.dataset) #convert sum loss to mean
+    loss /= len(test_loader.dataset) #convert sum to mean
     correct /= len(test_loader.dataset)
 
     return loss.item(), correct
 
 model = MNIST_model(hidden_size=64)
-optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, nesterov=True)
 optimizer.zero_grad(set_to_none=True)
 
 w_s = 1
@@ -87,9 +87,9 @@ column_list = ['epoch', 'loss', 'accuracy']
 train_metrics_df = pd.DataFrame(columns=column_list)
 test_metrics_df = pd.DataFrame(columns=column_list)
 
-for epoch in range(100):
-    curr_train_metrics_df = pd.DataFrame()
-    curr_test_metrics_df = pd.DataFrame()
+for epoch in range(50):
+    curr_train_metrics_df = pd.DataFrame(columns=column_list)
+    curr_test_metrics_df = pd.DataFrame(columns=column_list)
 
     print(f"Starting epoch {epoch}")
     print('\n')
@@ -107,7 +107,6 @@ for epoch in range(100):
     curr_test_metrics_df['loss'] = [test_loss]
     curr_test_metrics_df['accuracy'] = [test_acc]
     test_metrics_df = pd.concat([test_metrics_df, curr_test_metrics_df])
-    print(test_metrics_df)
     print(f"Test Loss: {test_loss}, Test Accuracy: {test_acc}")
 
 train_metrics_df.to_csv(f'Train_ws{w_s}.csv')
