@@ -6,7 +6,7 @@ from MNIST_model import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-batch_size_train = 64 #hyperparameter from paper
+batch_size_train = 64
 batch_size_test = batch_size_train
 
 train_loader = torch.utils.data.DataLoader(
@@ -70,10 +70,8 @@ def test(model, device, test_loader, w_s=1):
 
     return loss, correct
 
-print('test_again')
-
 model = MNIST_model(hidden_size=64)
-optimizer = torch.optim.SGD(model.parameters(), lr=0.005, momentum=0.9, nesterov=True) #hyperparameters from paper
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
 optimizer.zero_grad(set_to_none=True)
 
 w_s = 1
