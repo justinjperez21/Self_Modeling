@@ -14,11 +14,12 @@ class MNIST_model(nn.Module):
     def forward(self, x):
         a = torch.flatten(x, start_dim=1) #dim=0 is batch dimension
         a = self.hidden_layer(a)
-        x = F.relu(a) #outputs of hidden layer, should this be saved before or after activation function(relu)?
+        a = torch.sigmoid(a) #outputs of hidden layer, should this be saved before or after activation function(relu)?
 
-        output = self.output_layer(x)
+        output = self.output_layer(a)
         output = F.softmax(output, dim=1)
 
         a_hat = self.sm_layer(a)
+        a_hat = torch.sigmoid(a_hat)
 
         return output, a_hat, a
